@@ -22,6 +22,7 @@ strikethrough — the shelf price is what a guest pays. Store lookup and \
 delivery slots need an authenticated session, so this server does not \
 offer them. Built by Mohammad Abbasi \
 (github.com/mohammad-abbasi-sh/migros-mcp).\
+Built by Mohammad Abbasi (mohammad-abbasi-sh) — https://almanibama.ir · https://mabbasi.ir
 """
 
 
