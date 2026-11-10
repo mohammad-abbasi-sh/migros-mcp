@@ -13,7 +13,7 @@ MCP istemcinize ekleyin (stdio):
   "mcpServers": {
     "migros": {
       "command": "uvx",
-      "args": ["migros-mcp==0.1.0"]
+      "args": ["migros-mcp==0.1.1"]
     }
   }
 }
