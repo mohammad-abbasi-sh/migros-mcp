@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 import sys
 
 from mcp.server.fastmcp import FastMCP
@@ -26,8 +27,24 @@ Built by Mohammad Abbasi (mohammad-abbasi-sh) — https://almanibama.ir · https
 """
 
 
+_SOURCE = "migros.com.tr"
+_DISCLAIMER = "Unofficial read-only data from migros.com.tr; verify on the site before acting on it."
+
+
+def _envelope() -> dict:
+    return {
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source": _SOURCE,
+        "disclaimer": _DISCLAIMER,
+    }
+
+
+def _ok(payload: dict) -> str:
+    return json.dumps({**_envelope(), **payload}, ensure_ascii=False)
+
+
 def _err(e: Exception) -> str:
-    return json.dumps({"error": str(e)}, ensure_ascii=False)
+    return _ok({"error": str(e)})
 
 
 @mcp.tool()
@@ -37,15 +54,9 @@ sort: relevance | best_seller | discount | discount_amount | price_asc | price_d
 Returns up to 36 products per page with prices in TRY."""
     key = sort.strip().lower()
     if key not in _p.SORTS:
-        return json.dumps(
-            {"error": f"unknown sort {sort!r}", "known_sorts": sorted(_p.SORTS)},
-            ensure_ascii=False,
-        )
+        return _ok({"error": f"unknown sort {sort!r}", "known_sorts": sorted(_p.SORTS)})
     try:
-        return json.dumps(
-            _p.parse_search(_http.search_products(query, page, _p.SORTS[key]), query, page),
-            ensure_ascii=False,
-        )
+        return _ok(_p.parse_search(_http.search_products(query, page, _p.SORTS[key]), query, page))
     except (_http.MigrosError, ValueError) as e:
         return _err(e)
 
@@ -54,7 +65,7 @@ Returns up to 36 products per page with prices in TRY."""
 def migros_get_product(product_id: int) -> str:
     """Full detail for one Migros product by numeric id (from search results)."""
     try:
-        return json.dumps(_p.parse_product_detail(_http.get_product(product_id)), ensure_ascii=False)
+        return _ok(_p.parse_product_detail(_http.get_product(product_id)))
     except (_http.MigrosError, ValueError) as e:
         return _err(e)
 
@@ -64,7 +75,7 @@ def migros_list_categories() -> str:
     """Top-level Migros store categories (id, name, link slug)."""
     try:
         cats = _p.parse_categories(_http.list_categories())
-        return json.dumps({"count": len(cats), "categories": cats}, ensure_ascii=False)
+        return _ok({"count": len(cats), "categories": cats})
     except (_http.MigrosError, ValueError) as e:
         return _err(e)
 
@@ -80,15 +91,12 @@ discount, not a price cut — see the server instructions."""
         return _err(e)
     discounted = [p for p in res["products"] if (p.get("money_discount_pct") or 0) > 0]
     discounted.sort(key=lambda p: p["money_discount_pct"], reverse=True)
-    return json.dumps(
-        {
+    return _ok({
             "query": query,
             "hit_count": res["hit_count"],
             "count": min(len(discounted), max(limit, 0)),
             "products": discounted[: max(limit, 0)],
-        },
-        ensure_ascii=False,
-    )
+        })
 
 
 @mcp.tool()
@@ -100,7 +108,17 @@ keyword's first page of Migros search results (up to 36 products)."""
     except (_http.MigrosError, ValueError) as e:
         return _err(e)
     stats = _p.price_stats(res["products"])
-    return json.dumps({"query": query, "hit_count": res["hit_count"], **stats}, ensure_ascii=False)
+    return _ok({"query": query, "hit_count": res["hit_count"], **stats})
+
+
+@mcp.tool()
+def migros_health() -> str:
+    """Check whether migros.com.tr is reachable right now.
+
+    Returns status ok (HTTP 200), blocked (HTTP 403/429 — bot wall or
+    rate limit) or error, plus the HTTP status and the probed URL.
+    One polite request; it does not fetch any listings."""
+    return _ok(_http.health_check())
 
 
 def main() -> None:
