@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "migros-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Unofficial read-only MCP server for Migros Sanal Market (migros.com.tr) — product search, prices, promos, categories"
 readme = "README.md"
 license = { text = "MIT" }
