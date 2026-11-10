@@ -11,7 +11,7 @@
   "mcpServers": {
     "migros": {
       "command": "uvx",
-      "args": ["migros-mcp"]
+      "args": ["migros-mcp==0.1.0"]
     }
   }
 }
